@@ -2,25 +2,47 @@ const input = document.getElementById('terminal-input');
 const history = document.getElementById('history');
 const terminal = document.getElementById('terminal');
 
+// Tự động tăng chiều cao của textarea theo nội dung code dán vào
+input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
 terminal.addEventListener('click', () => input.focus());
 
 input.addEventListener('keydown', function (e) {
+    // Khi bấm phím Enter (không cần giữ Ctrl)
     if (e.key === 'Enter') {
+        // Nếu người dùng giữ Shift + Enter thì cho phép xuống dòng bình thường
+        if (e.shiftKey) {
+            return; 
+        }
+
+        e.preventDefault(); // Chặn hành vi xuống dòng mặc định của Enter
         const commandText = input.value.trim();
+        
         if (commandText) {
             logCommand(commandText);
             processCommand(commandText);
         } else {
             logCommand('');
         }
+        
         input.value = '';
+        input.style.height = 'auto'; // Reset lại chiều cao của textarea sau khi chạy
         terminal.scrollTop = terminal.scrollHeight;
     }
 });
 
+// Thêm sự kiện tự động giãn chiều cao khi gõ hoặc dán code dài
+input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
 function logCommand(cmd) {
     const line = document.createElement('div');
-    line.innerHTML = `<span class="prompt">user@afteros:~$</span> ${cmd}`;
+    line.innerHTML = `<span class="prompt">user@afteros:~$</span> ${escapeHtml(cmd).replace(/\n/g, '<br>')}`;
     history.appendChild(line);
 }
 
@@ -28,6 +50,11 @@ function logOutput(text) {
     const output = document.createElement('div');
     output.textContent = text;
     history.appendChild(output);
+}
+
+// Hàm phụ trợ để tránh lỗi hiển thị HTML khi in lệnh dài
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 const commands = new Map();
@@ -57,7 +84,6 @@ async function installApp(url) {
         throw new Error('Please provide a valid JavaScript URL.');
     }
 
-    // Dynamic imports execute the downloaded module. Never install code you do not trust.
     const appModule = await import(appUrl.href);
     const install = appModule.default || appModule.install;
 
@@ -73,12 +99,9 @@ async function installApp(url) {
 }
 
 function resolveAppUrl(packageNameOrUrl) {
-    // A simple name is always loaded from this site's packages directory.
     if (/^[a-z0-9][a-z0-9_-]*$/i.test(packageNameOrUrl)) {
         return new URL(`./packages/${packageNameOrUrl}.js`, window.location.href).href;
     }
-
-    // Keep supporting explicit URLs and relative paths for development.
     return packageNameOrUrl;
 }
 
@@ -109,10 +132,16 @@ function showPackages(packages) {
 }
 
 async function processCommand(cmd) {
-    const [rawCommand, ...args] = cmd.trim().split(/\s+/);
-    const coreCommand = rawCommand.toLowerCase();
+    const trimmedCmd = cmd.trim();
+    if (!trimmedCmd) return;
 
+    // Lấy từ đầu tiên để kiểm tra lệnh hệ thống
+    const firstSpaceIndex = trimmedCmd.search(/\s/);
+    const coreCommand = (firstSpaceIndex === -1 ? trimmedCmd : trimmedCmd.slice(0, firstSpaceIndex)).toLowerCase();
+
+    // 1. Xử lý lệnh 'import'
     if (coreCommand === 'import') {
+        const args = trimmedCmd.split(/\s+/).slice(1);
         const packageNameOrUrl = args.join(' ');
         if (!packageNameOrUrl) {
             logOutput('Usage: import <package-name> | import -l | import -s <search>');
@@ -157,16 +186,26 @@ async function processCommand(cmd) {
         return;
     }
 
+    // 2. Kiểm tra các lệnh đã đăng ký (help, about, js, date, clear, exit...)
     const command = commands.get(coreCommand);
-    if (!command) {
-        logOutput(`command not found: ${coreCommand}`);
+    if (command) {
+        const args = trimmedCmd.split(/\s+/).slice(1);
+        try {
+            await command.handler(args, { logOutput, registerCommand });
+        } catch (error) {
+            logOutput(`${coreCommand}: ${error.message}`);
+        }
         return;
     }
 
+    // 3. TỰ ĐỘNG CHẠY JS: Nếu không phải lệnh hệ thống, chạy trực tiếp đoạn code dài vừa dán bằng eval (unsandboxed)
     try {
-        await command.handler(args, { logOutput, registerCommand });
+        const result = (0, eval)(trimmedCmd);
+        if (result !== undefined) {
+            logOutput(String(result));
+        }
     } catch (error) {
-        logOutput(`${coreCommand}: ${error.message}`);
+        logOutput(`JS Error: ${error.message}`);
     }
 }
 
@@ -181,6 +220,22 @@ registerCommand('about', () => {
     logOutput('Terminal (terminal) v0.0.1-demo');
     logOutput('This is a terminal based on Javascript');
 }, 'About AfterOS');
+
+registerCommand('js', (args, { logOutput }) => {
+    const code = args.join(' ');
+    if (!code) {
+        logOutput('Usage: js <javascript-code>');
+        return;
+    }
+    try {
+        const result = (0, eval)(code);
+        if (result !== undefined) {
+            logOutput(String(result));
+        }
+    } catch (error) {
+        logOutput(`Error: ${error.message}`);
+    }
+}, 'Execute arbitrary JavaScript code directly');
 
 registerCommand('date', () => logOutput(new Date().toString()), 'Show the current date');
 

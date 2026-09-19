@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AfterOS Terminal</title>
 </head>
 <style>
     body {
@@ -14,11 +15,11 @@
 
     .input-line {
         display: flex;
-        align-items: center;
+        align-items: flex-start; /* Căn chỉnh lại để textarea nhiều dòng hiển thị đẹp hơn */
         margin-top: 5px;
     }
 
-        .prompt {
+    .prompt {
         color: #87ceeb;
         margin-right: 10px;
         white-space: nowrap;
@@ -32,6 +33,9 @@
         font-size: inherit;
         outline: none;
         flex-grow: 1;
+        resize: none; /* Khóa tính năng kéo dãn thủ công */
+        overflow: hidden; /* Ẩn thanh cuộn thừa */
+        height: 1.2em; /* Chiều cao mặc định 1 dòng */
     }
 </style>
 <body>
@@ -42,7 +46,8 @@
 
         <div class="input-line">
             <span class="prompt">user@afteros:~$</span>
-            <input type="text" id="terminal-input" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <!-- ĐÃ ĐỔI TỪ <input> SANG <textarea> ĐỂ HỖ TRỢ DÁN CODE NHIỀU DÒNG -->
+            <textarea id="terminal-input" rows="1" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
         </div>
     </div>
 
