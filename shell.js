@@ -9,7 +9,6 @@ input.addEventListener('input', function() {
 });
 
 terminal.addEventListener('click', () => input.focus());
-
 input.addEventListener('keydown', function (e) {
     // Khi bấm phím Enter (không cần giữ Ctrl)
     if (e.key === 'Enter') {
@@ -48,7 +47,12 @@ function logCommand(cmd) {
 
 function logOutput(text) {
     const output = document.createElement('div');
-    output.textContent = text;
+    // Nếu nội dung có nhiều dòng (như logo neofetch), dùng thẻ pre để giữ nguyên khoảng trắng
+    if (text.includes('\n')) {
+        output.innerHTML = `<pre style="margin:0; font-family:inherit;">${escapeHtml(text)}</pre>`;
+    } else {
+        output.textContent = text;
+    }
     history.appendChild(output);
 }
 
@@ -211,7 +215,6 @@ async function processCommand(cmd) {
 
 registerCommand('help', () => {
     logOutput('AfterOS');
-    logOutput(' Shift+T to open a terminal');
     logOutput('');
     logOutput(`Available commands: ${[...commands.keys()].join(', ')}`);
 }, 'Show available commands');
@@ -242,3 +245,21 @@ registerCommand('date', () => logOutput(new Date().toString()), 'Show the curren
 registerCommand('clear', () => { history.innerHTML = ''; }, 'Clear the terminal');
 
 registerCommand('exit', () => logOutput("'exit' does not support in this version."), 'Close the terminal');
+
+registerCommand('neofetch', () => {
+    const art = [
+        "       /\\        ",
+        "      /  \\       user@afterOS",
+        "     / /\\ \\      -----------------",
+        "    / /__\\ \\     OS: AfterOS x86_64 Web",
+        "   / /----\\ \\    Host: Browser Terminal",
+        "  /_/      \\_\\   Kernel: JS Unsandboxed v1.0",
+        "                 Uptime: Just booted",
+        "                 Shell: AfterOS Shell",
+        "                 Terminal: HTML Textarea",
+        "                 Memory: Optimized"
+    ];
+    
+    logOutput(art.join('\n'));
+}, 'Display system information with logo');
+processCommand('neofetch');

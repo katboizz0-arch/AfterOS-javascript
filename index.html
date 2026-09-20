@@ -3,41 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="app.css">
     <title>AfterOS Terminal</title>
 </head>
-<style>
-    body {
-        background-color: black;
-        color: white;
-        font-family: 'Courier New', Courier, monospace;
-        margin: 20px;
-    }
-
-    .input-line {
-        display: flex;
-        align-items: flex-start; /* Căn chỉnh lại để textarea nhiều dòng hiển thị đẹp hơn */
-        margin-top: 5px;
-    }
-
-    .prompt {
-        color: #87ceeb;
-        margin-right: 10px;
-        white-space: nowrap;
-    }
-
-    #terminal-input {
-        background: transparent;
-        border: none;
-        color: #ffffff;
-        font-family: inherit;
-        font-size: inherit;
-        outline: none;
-        flex-grow: 1;
-        resize: none; /* Khóa tính năng kéo dãn thủ công */
-        overflow: hidden; /* Ẩn thanh cuộn thừa */
-        height: 1.2em; /* Chiều cao mặc định 1 dòng */
-    }
-</style>
 <body>
     <div class="terminal" id="terminal">
         <div id="history">
