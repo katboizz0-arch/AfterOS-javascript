@@ -1,94 +1,31 @@
-:root {
-    --bg-color: #0c0c0c;
-    --terminal-green: #00ff66;
-    --prompt-blue: #38bdf8;
-    --text-color: #e2e8f0;
-    --dim-text: #64748b;
-    --glow-color: rgba(0, 255, 102, 0.15);
-}
-
 body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: 'Fira Code', 'Courier New', Courier, monospace;
-    margin: 0;
-    padding: 20px;
-    height: 100vh;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-}
+        background-color: black;
+        color: white;
+        font-family: 'Courier New', Courier, monospace;
+        margin: 20px;
+    }
 
-/* Khung Terminal chính bọc hiệu ứng bóng nhẹ */
-.terminal {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    background: rgba(12, 12, 12, 0.95);
-    border: 1px solid #222;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 102, 0.02);
-    overflow: hidden;
-}
+    .input-line {
+        display: flex;
+        align-items: flex-start; /* Căn chỉnh lại để textarea nhiều dòng hiển thị đẹp hơn */
+        margin-top: 5px;
+    }
 
-/* Phần lịch sử lệnh có thanh cuộn tùy chỉnh mượt mà */
-#history {
-    flex-grow: 1;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    padding-right: 5px;
-    word-break: break-all;
-}
+    .prompt {
+        color: #87ceeb;
+        margin-right: 10px;
+        white-space: nowrap;
+    }
 
-#history::-webkit-scrollbar {
-    width: 6px;
-}
-
-#history::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 3px;
-}
-
-#history::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* Dòng nhập liệu tối ưu */
-.input-line {
-    display: flex;
-    align-items: flex-start;
-    margin-top: 5px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid #222;
-    border-radius: 4px;
-    padding: 8px 10px;
-    transition: border-color 0.2s;
-}
-
-.input-line:focus-within {
-    border-color: rgba(56, 189, 248, 0.4);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
-}
-
-.prompt {
-    color: var(--prompt-blue);
-    margin-right: 10px;
-    white-space: nowrap;
-    font-weight: bold;
-    user-select: none;
-}
-
-#terminal-input {
-    background: transparent;
-    border: none;
-    color: var(--text-color);
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.5;
-    outline: none;
-    flex-grow: 1;
-    resize: none;
-    overflow: hidden;
-    min-height: 1.5em;
-}
+    #terminal-input {
+        background: transparent;
+        border: none;
+        color: #ffffff;
+        font-family: inherit;
+        font-size: inherit;
+        outline: none;
+        flex-grow: 1;
+        resize: none; /* Khóa tính năng kéo dãn thủ công */
+        overflow: hidden; /* Ẩn thanh cuộn thừa */
+        height: 1.2em; /* Chiều cao mặc định 1 dòng */
+    }
