@@ -247,10 +247,7 @@ registerCommand('clear', () => { history.innerHTML = ''; }, 'Clear the terminal'
 registerCommand('exit', () => logOutput("'exit' does not support in this version."), 'Close the terminal');
 
 registerCommand('neofetch', () => {
-    history.innerHTML = '';
     const art = [
-        history.innerHTML = '',
-        "Welcome to the Terminal. Type 'help' for commands. BASED ON JAVASCRIPT.",
         "       /\\        ",
         "      /  \\       user@afterOS",
         "     / /\\ \\      -----------------",
