@@ -10,14 +10,9 @@ input.addEventListener('input', function() {
 
 terminal.addEventListener('click', () => input.focus());
 input.addEventListener('keydown', function (e) {
-    // Khi bấm phím Enter (không cần giữ Ctrl)
     if (e.key === 'Enter') {
-        // Nếu người dùng giữ Shift + Enter thì cho phép xuống dòng bình thường
-        if (e.shiftKey) {
-            return; 
-        }
-
-        e.preventDefault(); // Chặn hành vi xuống dòng mặc định của Enter
+        // Đã bỏ tính năng Shift + Enter, nhấn Enter là thực thi lệnh/code luôn
+        e.preventDefault(); 
         const commandText = input.value.trim();
         
         if (commandText) {
@@ -28,15 +23,9 @@ input.addEventListener('keydown', function (e) {
         }
         
         input.value = '';
-        input.style.height = 'auto'; // Reset lại chiều cao của textarea sau khi chạy
+        input.style.height = 'auto'; // Reset chiều cao về 1 dòng
         terminal.scrollTop = terminal.scrollHeight;
     }
-});
-
-// Thêm sự kiện tự động giãn chiều cao khi gõ hoặc dán code dài
-input.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = (this.scrollHeight) + 'px';
 });
 
 function logCommand(cmd) {
@@ -47,7 +36,6 @@ function logCommand(cmd) {
 
 function logOutput(text) {
     const output = document.createElement('div');
-    // Nếu nội dung có nhiều dòng (như logo neofetch), dùng thẻ pre để giữ nguyên khoảng trắng
     if (text.includes('\n')) {
         output.innerHTML = `<pre style="margin:0; font-family:inherit;">${escapeHtml(text)}</pre>`;
     } else {
@@ -56,7 +44,6 @@ function logOutput(text) {
     history.appendChild(output);
 }
 
-// Hàm phụ trợ để tránh lỗi hiển thị HTML khi in lệnh dài
 function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -139,7 +126,6 @@ async function processCommand(cmd) {
     const trimmedCmd = cmd.trim();
     if (!trimmedCmd) return;
 
-    // Lấy từ đầu tiên để kiểm tra lệnh hệ thống
     const firstSpaceIndex = trimmedCmd.search(/\s/);
     const coreCommand = (firstSpaceIndex === -1 ? trimmedCmd : trimmedCmd.slice(0, firstSpaceIndex)).toLowerCase();
 
@@ -190,26 +176,26 @@ async function processCommand(cmd) {
         return;
     }
 
-    // 2. Kiểm tra các lệnh đã đăng ký (help, about, js, date, clear, exit...)
+    // 2. Kiểm tra các lệnh hệ thống đã đăng ký
     const command = commands.get(coreCommand);
     if (command) {
         const args = trimmedCmd.split(/\s+/).slice(1);
         try {
-            await command.handler(args, { logOutput, registerCommand });
+            await command.handler(args, { logOutput, registerCommand }, trimmedCmd);
         } catch (error) {
             logOutput(`${coreCommand}: ${error.message}`);
         }
         return;
     }
 
-    // 3. TỰ ĐỘNG CHẠY JS: Nếu không phải lệnh hệ thống, chạy trực tiếp đoạn code dài vừa dán bằng eval (unsandboxed)
+    // 3. TỰ ĐỘNG CHẠY JS UNSANDBOX TRỰC TIẾP KHI KHÔNG KHỚP LỆNH NÀO
     try {
         const result = (0, eval)(trimmedCmd);
         if (result !== undefined) {
             logOutput(String(result));
         }
     } catch (error) {
-        logOutput(`JS Error: ${error.message}`);
+        logOutput(`Uncaught ${error.name}: ${error.message}`);
     }
 }
 
@@ -224,21 +210,105 @@ registerCommand('about', () => {
     logOutput('This is a terminal based on Javascript');
 }, 'About AfterOS');
 
-registerCommand('js', (args, { logOutput }) => {
-    const code = args.join(' ');
-    if (!code) {
-        logOutput('Usage: js <javascript-code>');
-        return;
-    }
-    try {
-        const result = (0, eval)(code);
-        if (result !== undefined) {
-            logOutput(String(result));
+registerCommand('editor', (args, { logOutput }) => {
+    const mode = args[0] ? args[0].toLowerCase() : '';
+    const subArg = args[1] ? args[1].toLowerCase() : '';
+
+    if (mode === 'js' && subArg === 'true') {
+        if (document.getElementById('afteros-ide-window')) {
+            logOutput('Editor is already open.');
+            return;
         }
-    } catch (error) {
-        logOutput(`Error: ${error.message}`);
+
+        let win = document.createElement('div');
+        win.id = 'afteros-ide-window';
+        win.style.cssText = 'position:fixed; left:150px; top:80px; width:650px; height:450px; background:#1e1e1e; border:1px solid #444; box-shadow:0 15px 40px rgba(0,0,0,0.9); display:flex; flex-direction:column; border-radius:8px; overflow:hidden; z-index:' + ((window._winZ = (window._winZ || 100) + 1));
+
+        let titleBar = document.createElement('div');
+        titleBar.style.cssText = 'height:35px; background:#2d2d2d; cursor:move; display:flex; align-items:center; justify-content:space-between; padding:0 12px; color:#fff; font-size:13px; font-family:inherit; border-bottom:1px solid #3d3d3d;';
+        titleBar.innerHTML = '<span>AfterOS IDE - JavaScript Editor</span>';
+
+        let closeBtn = document.createElement('span');
+        closeBtn.textContent = '✕';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.onclick = () => win.remove();
+        titleBar.appendChild(closeBtn);
+
+        let textArea = document.createElement('textarea');
+        textArea.style.cssText = 'flex-grow:1; background:#121212; color:#d4d4d4; font-family:"Courier New", Courier, monospace; font-size:14px; padding:12px; border:none; outline:none; resize:none; line-height:1.4;';
+        textArea.placeholder = '// Nhập mã JavaScript unsandbox của bạn vào đây...\n// Ví dụ tạo lỗi thực tế:\nnonExistentFunction();';
+
+        let toolBar = document.createElement('div');
+        toolBar.style.cssText = 'height:45px; background:#2d2d2d; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-top:1px solid #3d3d3d;';
+
+        let infoText = document.createElement('span');
+        infoText.textContent = 'Status: Ready';
+        infoText.style.cssText = 'color:#888; font-size:11px;';
+
+        let runBtn = document.createElement('button');
+        runBtn.textContent = 'Run JS';
+        runBtn.style.cssText = 'background:#0e639c; color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-family:inherit; font-weight:bold; font-size:12px;';
+        runBtn.onmouseover = () => runBtn.style.background = '#1177bb';
+        runBtn.onmouseout = () => runBtn.style.background = '#0e639c';
+
+        runBtn.onclick = () => {
+            const codeToRun = textArea.value;
+            if (!codeToRun.trim()) return;
+
+
+            const originalError = console.error;
+            console.error = (...errArgs) => {
+                originalError(...errArgs);
+                const errorMsg = errArgs.map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg)).join(' ');
+                logOutput(`[UNCAUGHT ERROR] ${errorMsg}`);
+            };
+
+            try {
+                const result = new Function(codeToRun)();
+                if (result !== undefined) {
+                    logOutput(String(result));
+                }
+            } catch (error) {
+                const errorLine = `Uncaught ${error.name}: ${error.message}`;
+                const stackTrace = error.stack ? error.stack.split('\n').slice(1).join('\n') : '';
+                
+                logOutput(`[ERROR] ${errorLine}`);
+                if (stackTrace) {
+                    logOutput(`    at eval (eval at runCode)\n${stackTrace}`);
+                }
+            } finally {
+                console.error = originalError;
+            }
+
+        };
+
+        toolBar.appendChild(infoText);
+        toolBar.appendChild(runBtn);
+
+        win.appendChild(titleBar);
+        win.appendChild(textArea);
+        win.appendChild(toolBar);
+        document.body.appendChild(win);
+
+        let isDragging = false, startX, startY;
+        titleBar.onmousedown = (e) => {
+            isDragging = true;
+            startX = e.clientX - win.offsetLeft;
+            startY = e.clientY - win.offsetTop;
+            win.style.zIndex = ++window._winZ;
+        };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            win.style.left = (e.clientX - startX) + 'px';
+            win.style.top = (e.clientY - startY) + 'px';
+        };
+        document.onmouseup = () => { isDragging = false; };
+
+        logOutput('IDE window opened successfully.');
+    } else {
+        logOutput('Usage: editor js true');
     }
-}, 'Execute arbitrary JavaScript code directly');
+}, 'Open the graphical JavaScript IDE editor');
 
 registerCommand('date', () => logOutput(new Date().toString()), 'Show the current date');
 
@@ -262,4 +332,5 @@ registerCommand('neofetch', () => {
     
     logOutput(art.join('\n'));
 }, 'Display system information with logo');
+
 processCommand('neofetch');
